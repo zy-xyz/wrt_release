@@ -2,13 +2,15 @@ name: Release WRT
 run-name: Release - ${{ inputs.model }}
 
 on:
+  schedule: 
+    - cron: 0 22 * * 4
   workflow_dispatch:
     inputs:
       model:
         required: true
         description: Device Model
         type: choice
-        default: jdcloud_ipq60xx_immwrt
+        default: jdcloud_ipq60xx_libwrt
         options:
           - aliyun_ap8220_immwrt
           - cmcc_rax3000m_immwrt
