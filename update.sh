@@ -751,6 +751,13 @@ fix_rust_compile_error() {
     fi
 }
 
+update_smartdns_luci() {
+    if [ -d "$BUILD_DIR/feeds/small8/luci-app-smartdns" ]; then
+        rm -rf "$BUILD_DIR/feeds/small8/luci-app-smartdns"
+    fi
+    git clone --depth 1 -b master https://github.com/pymumu/luci-app-smartdns.git "$BUILD_DIR/feeds/small8/luci-app-smartdns"
+}
+
 main() {
     clone_repo
     clean_up
@@ -792,6 +799,7 @@ main() {
     add_gecoosac
     update_lucky
     fix_rust_compile_error
+    update_smartdns_luci
     install_feeds
     support_fw4_adg
     update_script_priority
