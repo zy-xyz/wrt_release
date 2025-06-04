@@ -756,6 +756,10 @@ update_smartdns_luci() {
         rm -rf "$BUILD_DIR/feeds/small8/luci-app-smartdns"
     fi
     git clone --depth 1 -b master https://github.com/pymumu/luci-app-smartdns.git "$BUILD_DIR/feeds/small8/luci-app-smartdns"
+
+    if [ -f "$BUILD_DIR/feeds/small8/luci-app-smartdns/Makefile" ]; then
+        sed -i 's/\.\.\/\.\.\/luci\.mk/\$(TOPDIR)\/feeds\/luci\/luci\.mk/g' "$BUILD_DIR/feeds/small8/luci-app-smartdns/Makefile"
+    fi
 }
 
 main() {
