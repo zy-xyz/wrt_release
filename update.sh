@@ -105,16 +105,24 @@ remove_unwanted_packages() {
     )
 
     for pkg in "${luci_packages[@]}"; do
-        \rm -rf ./feeds/luci/applications/$pkg
-        \rm -rf ./feeds/luci/themes/$pkg
+        if [[ -d ./feeds/luci/applications/$pkg ]]; then
+            \rm -rf ./feeds/luci/applications/$pkg
+        fi
+        if [[ -d ./feeds/luci/themes/$pkg ]]; then
+            \rm -rf ./feeds/luci/themes/$pkg
+        fi
     done
 
     for pkg in "${packages_net[@]}"; do
-        \rm -rf ./feeds/packages/net/$pkg
+        if [[ -d ./feeds/packages/net/$pkg ]]; then
+            \rm -rf ./feeds/packages/net/$pkg
+        fi
     done
 
     for pkg in "${small8_packages[@]}"; do
-        \rm -rf ./feeds/small8/$pkg
+        if [[ -d ./feeds/small8/$pkg ]]; then
+            \rm -rf ./feeds/small8/$pkg
+        fi
     done
 
     if [[ -d ./package/istore ]]; then
@@ -501,25 +509,43 @@ update_dnsmasq_conf() {
 # 更新版本
 update_package() {
     local dir=$(find "$BUILD_DIR/package" \( -type d -o -type l \) -name $1)
-    if [ -z $dir ]; then
+    if [ -z "$dir" ]; then
         return 0
+    fi
+    local branch=$2
+    if [ -z "$branch" ]; then
+        branch="releases"
     fi
     local mk_path="$dir/Makefile"
     if [ -f "$mk_path" ]; then
         # 提取repo
-        local PKG_REPO=$(grep -oE "^PKG_SOURCE_URL.*github.com(/[-_a-zA-Z0-9]{1,}){2}" $mk_path | awk -F"/" '{print $(NF - 1) "/" $NF}')
-        if [ -z $PKG_REPO ]; then
-            return 0
+        local PKG_REPO=$(grep -oE "^PKG_GIT_URL.*github.com(/[-_a-zA-Z0-9]{1,}){2}" $mk_path | awk -F"/" '{print $(NF - 1) "/" $NF}')
+        if [ -z "$PKG_REPO" ]; then
+            PKG_REPO=$(grep -oE "^PKG_SOURCE_URL.*github.com(/[-_a-zA-Z0-9]{1,}){2}" $mk_path | awk -F"/" '{print $(NF - 1) "/" $NF}')
+            if [ -z "$PKG_REPO" ]; then
+                return 0
+            fi
         fi
-        local PKG_VER=$(curl -sL "https://api.github.com/repos/$PKG_REPO/releases" | jq -r '.[0].tag_name')
+        local PKG_VER=$(curl -sL "https://api.github.com/repos/$PKG_REPO/$branch" | jq -r '.[0] | .tag_name // .name')
+        if [ -n "$3" ]; then
+            PKG_VER=$3
+        fi
+        local COMMIT_SHA=$(curl -sL "https://api.github.com/repos/$PKG_REPO/tags" | jq -r '.[] | select(.name=="'$PKG_VER'") | .commit.sha' | cut -c1-7)
+        if [ -n "$COMMIT_SHA" ]; then
+            sed -i 's/^PKG_GIT_SHORT_COMMIT:=.*/PKG_GIT_SHORT_COMMIT:='$COMMIT_SHA'/g' $mk_path
+        fi
         PKG_VER=$(echo $PKG_VER | grep -oE "[\.0-9]{1,}")
 
         local PKG_NAME=$(awk -F"=" '/PKG_NAME:=/ {print $NF}' $mk_path | grep -oE "[-_:/\$\(\)\?\.a-zA-Z0-9]{1,}")
         local PKG_SOURCE=$(awk -F"=" '/PKG_SOURCE:=/ {print $NF}' $mk_path | grep -oE "[-_:/\$\(\)\?\.a-zA-Z0-9]{1,}")
-        local PKG_SOURCE_URL=$(awk -F"=" '/PKG_SOURCE_URL:=/ {print $NF}' $mk_path | grep -oE "[-_:/\$\(\)\?\.a-zA-Z0-9]{1,}")
+        local PKG_SOURCE_URL=$(awk -F"=" '/PKG_SOURCE_URL:=/ {print $NF}' $mk_path | grep -oE "[-_:/\$\(\)\{\}\?\.a-zA-Z0-9]{1,}")
+        local PKG_GIT_URL=$(awk -F"=" '/PKG_GIT_URL:=/ {print $NF}' $mk_path)
+        local PKG_GIT_REF=$(awk -F"=" '/PKG_GIT_REF:=/ {print $NF}' $mk_path)
 
+        PKG_SOURCE_URL=${PKG_SOURCE_URL//\$\(PKG_GIT_URL\)/$PKG_GIT_URL}
+        PKG_SOURCE_URL=${PKG_SOURCE_URL//\$\(PKG_GIT_REF\)/$PKG_GIT_REF}
         PKG_SOURCE_URL=${PKG_SOURCE_URL//\$\(PKG_NAME\)/$PKG_NAME}
-        PKG_SOURCE_URL=${PKG_SOURCE_URL//\$\(PKG_VERSION\)/$PKG_VER}
+        PKG_SOURCE_URL=$(echo "$PKG_SOURCE_URL" | sed "s/\${PKG_VERSION}/$PKG_VER/g; s/\$(PKG_VERSION)/$PKG_VER/g")
         PKG_SOURCE=${PKG_SOURCE//\$\(PKG_NAME\)/$PKG_NAME}
         PKG_SOURCE=${PKG_SOURCE//\$\(PKG_VERSION\)/$PKG_VER}
 
@@ -666,7 +692,7 @@ update_proxy_app_menu_location() {
     local passwall_path="$BUILD_DIR/package/feeds/small8/luci-app-passwall/luasrc/controller/passwall.lua"
     if [ -d "${passwall_path%/*}" ] && [ -f "$passwall_path" ]; then
         local pos=$(grep -n "entry" "$passwall_path" | head -n 1 | awk -F ":" '{print $1}')
-        if [ -n $pos ]; then
+        if [ -n "$pos" ]; then
             sed -i ''${pos}'i\	entry({"admin", "proxy"}, firstchild(), "Proxy", 30).dependent = false' "$passwall_path"
             sed -i 's/"services"/"proxy"/g' "$passwall_path"
         fi
@@ -690,7 +716,7 @@ update_dns_app_menu_location() {
     local smartdns_path="$BUILD_DIR/package/feeds/small8/luci-app-smartdns/luasrc/controller/smartdns.lua"
     if [ -d "${smartdns_path%/*}" ] && [ -f "$smartdns_path" ]; then
         local pos=$(grep -n "entry" "$smartdns_path" | head -n 1 | awk -F ":" '{print $1}')
-        if [ -n $pos ]; then
+        if [ -n "$pos" ]; then
             sed -i ''${pos}'i\	entry({"admin", "dns"}, firstchild(), "DNS", 29).dependent = false' "$smartdns_path"
             sed -i 's/"services"/"dns"/g' "$smartdns_path"
         fi
@@ -809,6 +835,10 @@ main() {
     update_script_priority
     fix_easytier
     update_geoip
+    update_package "runc" "releases" "v1.2.6"
+    update_package "containerd" "releases" "v1.7.27"
+    update_package "docker" "tags"
+    update_package "dockerd"
     # update_package "xray-core"
     # update_proxy_app_menu_location
     # update_dns_app_menu_location
