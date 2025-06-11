@@ -846,8 +846,8 @@ main() {
     update_geoip
     update_package "runc" "releases" "v1.2.6"
     update_package "containerd" "releases" "v1.7.27"
-    update_package "docker" "tags"
-    update_package "dockerd"
+    update_package "docker" "tags" "v28.2.2"
+    update_package "dockerd" "releases" "v28.2.2"
     # update_package "xray-core"
     # update_proxy_app_menu_location
     # update_dns_app_menu_location
