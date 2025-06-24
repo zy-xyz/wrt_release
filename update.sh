@@ -814,6 +814,7 @@ update_diskman() {
         mv applications/luci-app-diskman ../luci-app-diskman || return # 添加错误检查
         cd .. || return
         \rm -rf diskman
+        cd "$BUILD_DIR"
     fi
 }
 
