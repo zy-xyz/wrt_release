@@ -797,6 +797,26 @@ update_smartdns_luci() {
     fi
 }
 
+update_diskman() {
+    local path="$BUILD_DIR/feeds/luci/applications/luci-app-diskman"
+    if [ -d "$path" ]; then
+        cd "$BUILD_DIR/feeds/luci/applications" || return # 显式路径避免歧义
+        \rm -rf "luci-app-diskman"                        # 直接删除目标目录
+
+        git clone --filter=blob:none --no-checkout https://github.com/lisaac/luci-app-diskman.git diskman || return
+        cd diskman || return
+
+        git sparse-checkout init --cone
+        git sparse-checkout set applications/luci-app-diskman || return # 错误处理
+
+        git checkout --quiet # 静默检出避免冗余输出
+
+        mv applications/luci-app-diskman ../luci-app-diskman || return # 添加错误检查
+        cd .. || return
+        \rm -rf diskman
+    fi
+}
+
 main() {
     clone_repo
     clean_up
@@ -839,6 +859,7 @@ main() {
     update_lucky
     fix_rust_compile_error
     update_smartdns_luci
+    update_diskman
     install_feeds
     support_fw4_adg
     update_script_priority
