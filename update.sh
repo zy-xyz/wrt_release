@@ -361,8 +361,8 @@ change_cpuusage() {
 
     # Modify LuCI RPC script to prefer our custom cpuusage script
     if [ -f "$luci_rpc_path" ]; then
-        # This sed command replaces the simple `top` command with a check for `/sbin/cpuusage`
-        sed -i "s#const fd = popen('top -n1 | awk \\'/\^CPU/ {printf(\"%d%\", 100 - \\\$8)}\\'')#const cpuUsageCommand = access('/sbin/cpuusage') ? '/sbin/cpuusage' : 'top -n1 | awk \\'/\^CPU/ {printf(\"%d%\", 100 - \\\$8)}\\''; const fd = popen(cpuUsageCommand)#" "$luci_rpc_path"
+        sed -i "s#const fd = popen('top -n1 | awk \\\'/^CPU/ {printf(\"%d%\", 100 - \$8)}\\\'')#const cpuUsageCommand = access('/sbin/cpuusage') ? '/sbin/cpuusage' : 'top -n1 | awk \\\'/^CPU/ {printf(\"%d%\", 100 - \$8)}\\\''#g" "$luci_rpc_path"
+        sed -i '/cpuUsageCommand/a \\t\t\tconst fd = popen(cpuUsageCommand);' "$luci_rpc_path"
     fi
 
     # Remove old script if it exists from a previous build
