@@ -148,3 +148,11 @@ jobs:
           tag_name: ${{ env.BUILD_DATE }}_${{ inputs.model }}
           files: ${{ inputs.model == 'n1_immwrt' && env.PACKAGED_OUTPUTPATH || './firmware' }}/*.*
           body_path: ./release_body.txt
+          
+      - uses: xhnmt/pushplus-action@v1.0.0
+        with:
+          token: ${{ secrets.token }}
+          title: "Release WRT (Scheduled)"
+          content: |
+                    <h1>GitHub Actions 推送通知</h1>
+                    <p>查看工作流运行状态：<a href="${{ steps.workflow-run-url.outputs.workflowRunUrl }}">点击这里</a></p>"
