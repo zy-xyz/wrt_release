@@ -128,6 +128,4 @@ jobs:
           title: "Release WRT (Scheduled)"
           content: |
                     <h1>GitHub Actions 推送通知</h1>
-                    <p>推送时间：${{ steps.current-time.outputs.formattedTime }}</p>
-                    <p>推送内容：这是一个测试推送。</p>
                     <p>查看工作流运行状态：<a href="${{ steps.workflow-run-url.outputs.workflowRunUrl }}">点击这里</a></p>"
