@@ -923,6 +923,16 @@ config server 'http_only'
         option access_log 'off; # logd openwrt'
 EOF
     fi
+
+    local nginx_template="$BUILD_DIR/feeds/packages/net/nginx-util/files/uci.conf.template"
+    if [ -f "$nginx_template" ]; then
+        # 检查是否已存在配置，避免重复添加
+        if ! grep -q "client_body_in_file_only clean;" "$nginx_template"; then
+            sed -i "/client_max_body_size 128M;/a\\
+\tclient_body_in_file_only clean;\\
+\tclient_body_temp_path /mnt/tmp;" "$nginx_template"
+        fi
+    fi
 }
 
 main() {
