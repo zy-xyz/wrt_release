@@ -874,19 +874,6 @@ update_diskman() {
     fi
 }
 
-fix_samba4() {
-    local SAMBA4_MAKEFILE="$BUILD_DIR/feeds/packages/net/samba4/Makefile"
-
-    # 检查 samba4-libs 的依赖中是否已经包含了 libcrypt-compat
-    if ! sed -n '/define Package\/samba4-libs/,/endef/p' "$SAMBA4_MAKEFILE" | grep -q 'DEPENDS:=.*+libcrypt-compat'; then
-        echo "Adding +libcrypt-compat dependency to samba4-libs..."
-        # 使用更健壮的命令来添加依赖
-        sed -i '/define Package\/samba4-libs/,/endef/s/^\(\s*DEPENDS:=\)/\1 +libcrypt-compat/' "$SAMBA4_MAKEFILE"
-    else
-        echo "Dependency +libcrypt-compat already exists in samba4-libs."
-    fi
-}
-
 add_quickfile() {
     local repo_url="https://github.com/sbwml/luci-app-quickfile.git"
     local target_dir="$BUILD_DIR/package/emortal/quickfile"
@@ -903,6 +890,38 @@ add_quickfile() {
 \telse \\\
 \t\t\$(INSTALL_BIN) \$(PKG_BUILD_DIR)\/quickfile-aarch64_generic \$(1)\/usr\/bin\/quickfile; \\\
 \tfi' "$makefile_path"
+    fi
+}
+
+# 设置 Nginx 默认配置
+set_nginx_default_config() {
+    local nginx_config_path="$BUILD_DIR/feeds/packages/net/nginx-util/files/nginx.config"
+    if [ -f "$nginx_config_path" ]; then
+        # 使用 cat 和 heredoc 覆盖写入 nginx.config 文件
+        cat > "$nginx_config_path" <<EOF
+config main 'global'
+        option uci_enable 'true'
+
+config server '_lan'
+        list listen '443 ssl default_server'
+        list listen '[::]:443 ssl default_server'
+        option server_name '_lan'
+        list include 'restrict_locally'
+        list include 'conf.d/*.locations'
+        option uci_manage_ssl 'self-signed'
+        option ssl_certificate '/etc/nginx/conf.d/_lan.crt'
+        option ssl_certificate_key '/etc/nginx/conf.d/_lan.key'
+        option ssl_session_cache 'shared:SSL:32k'
+        option ssl_session_timeout '64m'
+        option access_log 'off; # logd openwrt'
+
+config server 'http_only'
+        list listen '80'
+        list listen '[::]:80'
+        option server_name 'http_only'
+        list include 'conf.d/*.locations'
+        option access_log 'off; # logd openwrt'
+EOF
     fi
 }
 
@@ -950,7 +969,7 @@ main() {
     fix_rust_compile_error
     # update_smartdns 暂不更新，openwrt-smartdns不适配
     update_diskman
-    # fix_samba4
+    set_nginx_default_config
     install_feeds
     support_fw4_adg
     update_script_priority
