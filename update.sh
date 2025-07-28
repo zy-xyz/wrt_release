@@ -935,6 +935,22 @@ EOF
     fi
 }
 
+update_uwsgi_limit_as() {
+    # 更新 uwsgi 的 limit-as 配置，将其值更改为 8192
+    local cgi_io_ini="$BUILD_DIR/feeds/packages/net/uwsgi/files-luci-support/luci-cgi_io.ini"
+    local webui_ini="$BUILD_DIR/feeds/packages/net/uwsgi/files-luci-support/luci-webui.ini"
+
+    if [ -f "$cgi_io_ini" ]; then
+        # 将 luci-cgi_io.ini 文件中的 limit-as 值更新为 8192
+        sed -i 's/^limit-as = .*/limit-as = 8192/g' "$cgi_io_ini"
+    fi
+
+    if [ -f "$webui_ini" ]; then
+        # 将 luci-webui.ini 文件中的 limit-as 值更新为 8192
+        sed -i 's/^limit-as = .*/limit-as = 8192/g' "$webui_ini"
+    fi
+}
+
 main() {
     clone_repo
     clean_up
@@ -980,6 +996,7 @@ main() {
     # update_smartdns 暂不更新，openwrt-smartdns不适配
     update_diskman
     set_nginx_default_config
+    update_uwsgi_limit_as
     install_feeds
     support_fw4_adg
     update_script_priority
