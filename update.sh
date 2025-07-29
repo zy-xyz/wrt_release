@@ -951,12 +951,24 @@ update_uwsgi_limit_as() {
     fi
 }
 
+remove_tweaked_packages() {
+    local target_mk="$BUILD_DIR/include/target.mk"
+    if [ -f "$target_mk" ]; then
+        # 检查目标行是否未被注释
+        if grep -q "^DEFAULT_PACKAGES += \$(DEFAULT_PACKAGES.tweak)" "$target_mk"; then
+            # 如果未被注释，则添加注释
+            sed -i 's/DEFAULT_PACKAGES += $(DEFAULT_PACKAGES.tweak)/# DEFAULT_PACKAGES += $(DEFAULT_PACKAGES.tweak)/g' "$target_mk"
+        fi
+    fi
+}
+
 main() {
     clone_repo
     clean_up
     reset_feeds_conf
     update_feeds
     remove_unwanted_packages
+    remove_tweaked_packages
     update_homeproxy
     fix_default_set
     fix_miniupnpd
