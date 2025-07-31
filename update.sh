@@ -962,6 +962,23 @@ remove_tweaked_packages() {
     fi
 }
 
+# 修复 gettext 编译问题
+# @description: 当 gettext-full 版本为 0.24.1 时，从 OpenWrt 官方仓库更新 gettext-full 和 bison 的 Makefile 以解决编译问题。
+# @see: https://raw.githubusercontent.com/openwrt/openwrt/refs/heads/main/package/libs/gettext-full/Makefile
+# @see: https://raw.githubusercontent.com/openwrt/openwrt/refs/heads/main/tools/bison/Makefile
+fix_gettext_compile() {
+    local gettext_makefile_path="$BUILD_DIR/package/libs/gettext-full/Makefile"
+    local bison_makefile_path="$BUILD_DIR/tools/bison/Makefile"
+
+    # 检查 gettext-full 的 Makefile 是否存在并且版本是否为 0.24.1
+    if [ -f "$gettext_makefile_path" ] && grep -q "PKG_VERSION:=0.24.1" "$gettext_makefile_path"; then
+        echo "检测到 gettext 版本为 0.24.1，正在更新 Makefiles..."
+        # 从 OpenWrt 官方仓库下载最新的 Makefile
+        curl -L -o "$gettext_makefile_path" "https://raw.githubusercontent.com/openwrt/openwrt/refs/heads/main/package/libs/gettext-full/Makefile"
+        curl -L -o "$bison_makefile_path" "https://raw.githubusercontent.com/openwrt/openwrt/refs/heads/main/tools/bison/Makefile"
+    fi
+}
+
 main() {
     clone_repo
     clean_up
@@ -1009,6 +1026,7 @@ main() {
     update_diskman
     set_nginx_default_config
     update_uwsgi_limit_as
+    fix_gettext_compile
     install_feeds
     support_fw4_adg
     update_script_priority
