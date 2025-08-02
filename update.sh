@@ -399,13 +399,14 @@ EOF
     chmod +x "$sh_dir/custom_task"
 }
 
-update_pw() {
-    local pw_share_dir="$BUILD_DIR/feeds/small8/luci-app-passwall/root/usr/share/passwall"
-    local smartdns_lua_path="$pw_share_dir/helper_smartdns_add.lua"
-    local rules_dir="$pw_share_dir/rules"
+# 清理 Passwall 的 chnlist 规则文件
+clear_passwall_chnlist() {
+    local chnlist_path="$BUILD_DIR/feeds/small8/luci-app-passwall/root/usr/share/passwall/rules/chnlist"
 
-    # 清空chnlist
-    [ -f "$rules_dir/chnlist" ] && echo "" >"$rules_dir/chnlist"
+    # 如果 chnlist 文件存在，则清空其内容
+    if [ -f "$chnlist_path" ]; then
+        > "$chnlist_path"
+    fi
 }
 
 install_opkg_distfeeds() {
@@ -913,7 +914,7 @@ main() {
     update_tcping
     add_ax6600_led
     set_custom_task
-    update_pw
+    clear_passwall_chnlist
     install_opkg_distfeeds
     update_nss_pbuf_performance
     set_build_signature
@@ -944,9 +945,6 @@ main() {
     update_package "containerd" "releases" "v1.7.27"
     update_package "docker" "tags" "v28.2.2"
     update_package "dockerd" "releases" "v28.2.2"
-    # update_package "xray-core"
-    # update_proxy_app_menu_location
-    # update_dns_app_menu_location
 }
 
 main "$@"
