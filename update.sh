@@ -451,10 +451,11 @@ apply_passwall_tweaks() {
         > "$chnlist_path"
     fi
 
-    # 调整 Xray 最大 RTT
+    # 调整 Xray 最大 RTT 和 保留记录数量
     local xray_util_path="$BUILD_DIR/feeds/small8/luci-app-passwall/luasrc/passwall/util_xray.lua"
     if [ -f "$xray_util_path" ]; then
         sed -i 's/maxRTT = "1s"/maxRTT = "2s"/g' "$xray_util_path"
+        sed -i 's/sampling = 3/sampling = 5/g' "$xray_util_path"
     fi
 }
 
