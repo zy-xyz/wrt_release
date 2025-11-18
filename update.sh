@@ -52,16 +52,19 @@ clone_repo() {
 
 clean_up() {
     cd $BUILD_DIR
-    if [[ -f $BUILD_DIR/.config ]]; then
-        \rm -f $BUILD_DIR/.config
+    if [[ -f "$BUILD_DIR/.config" ]]; then
+        \rm -f "$BUILD_DIR/.config"
     fi
-    if [[ -d $BUILD_DIR/tmp ]]; then
-        \rm -rf $BUILD_DIR/tmp
+    if [[ -d "$BUILD_DIR/tmp" ]]; then
+        \rm -rf "$BUILD_DIR/tmp"
     fi
-    if [[ -d $BUILD_DIR/logs ]]; then
-        \rm -rf $BUILD_DIR/logs/*
+    if [[ -d "$BUILD_DIR/logs" ]]; then
+        \rm -rf "$BUILD_DIR/logs/*"
     fi
-    mkdir -p $BUILD_DIR/tmp
+    if [[ -d "$BUILD_DIR/feeds" ]]; then
+        ./scripts/feeds clean
+    fi
+    mkdir -p "$BUILD_DIR/tmp"
     echo "1" >$BUILD_DIR/tmp/.build
 }
 
@@ -103,7 +106,6 @@ update_feeds() {
     # fi
 
     # 更新 feeds
-    ./scripts/feeds clean
     ./scripts/feeds update -a
 }
 
@@ -205,8 +207,8 @@ install_fullconenat() {
 
 check_default_settings() {
     local settings_dir="$BUILD_DIR/package/emortal/default-settings"
-    if [ ! -d "$settings_dir" ]; then
-        echo "目录 $settings_dir 不存在，正在从 immortalwrt 仓库克隆..."
+    if [ -z "$(find "$BUILD_DIR/package" -type d -name "default-settings" -print -quit 2>/dev/null)" ]; then
+        echo "在 $BUILD_DIR/package 中未找到 default-settings 目录，正在从 immortalwrt 仓库克隆..."
         local tmp_dir
         tmp_dir=$(mktemp -d)
         if git clone --depth 1 --filter=blob:none --sparse https://github.com/immortalwrt/immortalwrt.git "$tmp_dir"; then
@@ -231,7 +233,7 @@ install_feeds() {
     ./scripts/feeds update -i
     for dir in $BUILD_DIR/feeds/*; do
         # 检查是否为目录并且不以 .tmp 结尾，并且不是软链接
-        if [ -d "$dir" ] && [[ ! "$dir" == *.tmp ]] && [ ! -L "$dir" ]; then
+        if [ -d "$dir" ] && [[ ! "$dir" == *.tmp ]] && [[ ! "$dir" == *.index ]] && [[ ! "$dir" == *.targetindex ]]; then
             if [[ $(basename "$dir") == "small8" ]]; then
                 install_small8
                 install_fullconenat
@@ -433,8 +435,12 @@ change_cpuusage() {
     fi
 
     # Install platform-specific cpuusage scripts
-    install -Dm755 "$BASE_PATH/patches/cpuusage" "$qualcommax_sbin_dir/cpuusage"
-    install -Dm755 "$BASE_PATH/patches/hnatusage" "$filogic_sbin_dir/cpuusage"
+    if [ -d "$BUILD_DIR/target/linux/qualcommax" ]; then
+        install -Dm755 "$BASE_PATH/patches/cpuusage" "$qualcommax_sbin_dir/cpuusage"
+    fi
+    if [ -d "$BUILD_DIR/target/linux/mediatek" ]; then
+        install -Dm755 "$BASE_PATH/patches/hnatusage" "$filogic_sbin_dir/cpuusage"
+    fi
 }
 
 update_tcping() {
