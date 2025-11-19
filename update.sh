@@ -805,6 +805,52 @@ update_geoip() {
 }
 
 update_lucky() {
+    local lucky_repo_url="https://github.com/gdy666/luci-app-lucky.git"
+    local target_small8_dir="$BUILD_DIR/feeds/small8"
+    local lucky_dir="$target_small8_dir/lucky"
+    local luci_app_lucky_dir="$target_small8_dir/luci-app-lucky"
+
+    # 提前检查目标目录是否存在
+    if [ ! -d "$lucky_dir" ] || [ ! -d "$luci_app_lucky_dir" ]; then
+        echo "Warning: $lucky_dir 或 $luci_app_lucky_dir 不存在，跳过 lucky 源代码更新。" >&2
+    else
+        local tmp_dir
+        tmp_dir=$(mktemp -d)
+
+        echo "正在从 $lucky_repo_url 稀疏检出 luci-app-lucky 和 lucky..."
+
+        if ! git clone --depth 1 --filter=blob:none --no-checkout "$lucky_repo_url" "$tmp_dir"; then
+            echo "错误：从 $lucky_repo_url 克隆仓库失败" >&2
+            rm -rf "$tmp_dir"
+            return 0
+        fi
+
+        pushd "$tmp_dir" > /dev/null
+        git sparse-checkout init --cone
+        git sparse-checkout set luci-app-lucky lucky || {
+            echo "错误：稀疏检出 luci-app-lucky 或 lucky 失败" >&2
+            popd > /dev/null
+            rm -rf "$tmp_dir"
+            return 0
+        }
+        git checkout --quiet
+
+        # 覆盖到目标目录
+        \cp -rf "$tmp_dir/luci-app-lucky/." "$luci_app_lucky_dir/"
+        \cp -rf "$tmp_dir/lucky/." "$lucky_dir/"
+
+        popd > /dev/null
+        rm -rf "$tmp_dir"
+        echo "luci-app-lucky 和 lucky 源代码更新完成。"
+    fi
+
+    # 默认关闭lucky
+    local lucky_conf="$BUILD_DIR/feeds/small8/lucky/files/luckyuci"
+    if [ -f "$lucky_conf" ]; then
+        sed -i "s/option enabled '1'/option enabled '0'/g" "$lucky_conf"
+        sed -i "s/option logger '1'/option logger '0'/g" "$lucky_conf"
+    fi
+
     # 从补丁文件名中提取版本号
     local version
     version=$(find "$BASE_PATH/patches" -name "lucky_*.tar.gz" -printf "%f\n" | head -n 1 | sed -n 's/^lucky_\(.*\)_Linux.*$/\1/p')
