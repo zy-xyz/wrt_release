@@ -1176,10 +1176,10 @@ main() {
     update_geoip
     fix_openssl_ktls
     fix_opkg_check
-    update_package "runc" "releases" "v1.2.6"
-    update_package "containerd" "releases" "v1.7.27"
-    update_package "docker" "tags" "v28.2.2"
-    update_package "dockerd" "releases" "v28.2.2"
+    #update_package "runc" "releases" "v1.2.6"
+    #update_package "containerd" "releases" "v1.7.27"
+    #update_package "docker" "tags" "v28.2.2"
+    #update_package "dockerd" "releases" "v28.2.2"
     # apply_hash_fixes # 调用哈希修正函数
 }
 
