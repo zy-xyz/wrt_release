@@ -1175,6 +1175,39 @@ fix_opkg_check() {
     fi
 }
 
+fix_quectel_cm() {
+    local makefile_path="$BUILD_DIR/package/feeds/packages/quectel-cm/Makefile"
+    local cmake_patch_path="$BUILD_DIR/package/feeds/packages/quectel-cm/patches/020-cmake.patch"
+
+    if [ -f "$makefile_path" ]; then
+        echo "正在修复 quectel-cm Makefile..."
+
+        # 删除旧的下载相关行
+        sed -i '/^PKG_SOURCE:=/d' "$makefile_path"
+        sed -i '/^PKG_SOURCE_URL:=@IMMORTALWRT/d' "$makefile_path"
+        sed -i '/^PKG_HASH:=/d' "$makefile_path"
+
+        # 在 PKG_RELEASE 行后添加新的 git 下载配置
+        sed -i '/^PKG_RELEASE:=/a\
+\
+PKG_SOURCE_PROTO:=git\
+PKG_SOURCE_URL:=https://github.com/Carton32/quectel-CM.git\
+PKG_SOURCE_VERSION:=$(PKG_VERSION)\
+PKG_MIRROR_HASH:=skip' "$makefile_path"
+
+        # 更新 PKG_RELEASE 版本号
+        sed -i 's/^PKG_RELEASE:=2$/PKG_RELEASE:=3/' "$makefile_path"
+
+        echo "quectel-cm Makefile 修复完成。"
+    fi
+
+    if [ -f "$cmake_patch_path" ]; then
+        # 为补丁文件中的两行末尾添加空格，以适配 git 下载的源码
+        sed -i 's/-cmake_minimum_required(VERSION 2\.4)$/-cmake_minimum_required(VERSION 2.4) /' "$cmake_patch_path"
+        sed -i 's/project(quectel-CM)$/project(quectel-CM) /' "$cmake_patch_path"
+    fi
+}
+
 main() {
     clone_repo
     clean_up
@@ -1231,6 +1264,7 @@ main() {
     update_geoip
     fix_openssl_ktls
     fix_opkg_check
+    fix_quectel_cm
     update_package "runc" "releases" "v1.3.3"
     update_package "containerd" "releases" "v1.7.28"
     update_package "docker" "tags" "v28.5.2"
