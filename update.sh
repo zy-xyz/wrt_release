@@ -99,6 +99,20 @@ update_feeds() {
         echo "src-git passwall https://github.com/Openwrt-Passwall/openwrt-passwall;main" >>"$FEEDS_PATH"
     fi
 
+      # 检查并添加 openwrt-bandix 源
+      if ! grep -q "openwrt_bandix" "$BUILD_DIR/$FEEDS_CONF"; then
+          # 确保文件以换行符结尾
+          [ -z "$(tail -c 1 "$BUILD_DIR/$FEEDS_CONF")" ] || echo "" >>"$BUILD_DIR/$FEEDS_CONF"
+          echo 'src-git openwrt_bandix https://github.com/timsaya/openwrt-bandix.git;main' >> "$BUILD_DIR/$FEEDS_CONF"
+      fi
+
+      # 检查并添加 luci-app-bandix 源
+      if ! grep -q "luci_app_bandix" "$BUILD_DIR/$FEEDS_CONF"; then
+          # 确保文件以换行符结尾
+          [ -z "$(tail -c 1 "$BUILD_DIR/$FEEDS_CONF")" ] || echo "" >>"$BUILD_DIR/$FEEDS_CONF"
+          echo 'src-git luci_app_bandix https://github.com/timsaya/luci-app-bandix.git;main' >> "$BUILD_DIR/$FEEDS_CONF"
+      fi
+
     # 添加bpf.mk解决更新报错
     if [ ! -f "$BUILD_DIR/include/bpf.mk" ]; then
         touch "$BUILD_DIR/include/bpf.mk"
@@ -126,7 +140,7 @@ remove_unwanted_packages() {
         "haproxy" "xray-core" "xray-plugin" "dns2socks" "alist" "hysteria"
         "mosdns" "adguardhome" "ddns-go" "naiveproxy" "shadowsocks-rust"
         "sing-box" "v2ray-core" "v2ray-geodata" "v2ray-plugin" "tuic-client"
-        "chinadns-ng" "ipt2socks" "tcping" "trojan-plus" "simple-obfs" "shadowsocksr-libev" 
+        "chinadns-ng" "ipt2socks" "tcping" "trojan-plus" "simple-obfs" "shadowsocksr-libev"
         "dae" "daed" "mihomo" "geoview" "tailscale" "open-app-filter" "msd_lite"
     )
     local packages_utils=(
